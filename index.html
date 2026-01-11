@@ -179,6 +179,10 @@
             Load a ROM file to start playing
         </div>
         
+        <div class="status" id="input-status" style="background: rgba(76, 175, 80, 0.2); color: #4CAF50;">
+            Inputs: None
+        </div>
+        
         <div class="controls">
             <input type="file" id="rom-input" accept=".gb,.gbc">
             <button id="load-rom-btn">📁 Load ROM File</button>
@@ -216,10 +220,15 @@
         const resetBtn = document.getElementById('reset-btn');
         const romInput = document.getElementById('rom-input');
         const status = document.getElementById('status');
+        const inputStatus = document.getElementById('input-status');
         
         function setStatus(message, type = '') {
             status.textContent = message;
             status.className = 'status ' + type;
+        }
+        
+        function updateInputStatus(keys) {
+            inputStatus.textContent = 'Inputs: ' + (keys.length > 0 ? keys.join(', ') : 'None');
         }
         
         // Initialize WASM
@@ -304,6 +313,7 @@
                 e.preventDefault();
                 const bit = keyMap[e.key];
                 joypadState &= ~(1 << bit);
+                console.log('Key down:', e.key, 'Joypad state:', joypadState.toString(16));
             }
         });
         
@@ -312,36 +322,63 @@
                 e.preventDefault();
                 const bit = keyMap[e.key];
                 joypadState |= (1 << bit);
+                console.log('Key up:', e.key, 'Joypad state:', joypadState.toString(16));
             }
         });
         
         function startEmulation() {
             if (!emulator || isPaused) return;
             
-            function frame() {
+            const targetFrameTime = 1000 / 60; // 60 FPS = ~16.67ms per frame
+            let lastFrameTime = performance.now();
+            let frameCount = 0;
+            let fpsTime = performance.now();
+            
+            function frame(currentTime) {
                 if (isPaused || !emulator) return;
                 
-                try {
-                    // Run one frame
-                    emulator.update_frame();
-                    
-                    // Get frame buffer directly from WASM
-                    const frameData = emulator.get_frame_buffer();
-                    
-                    // Render to canvas
-                    const imageData = ctx.createImageData(160, 144);
-                    const data = new Uint32Array(imageData.data.buffer);
-                    data.set(frameData);
-                    ctx.putImageData(imageData, 0, 0);
-                    
-                    animationId = requestAnimationFrame(frame);
-                } catch (err) {
-                    console.error('Frame error:', err);
-                    setStatus('Emulation error: ' + err.message, 'error');
+                const deltaTime = currentTime - lastFrameTime;
+                
+                // Only run a frame if enough time has passed
+                if (deltaTime >= targetFrameTime) {
+                    try {
+                        // Update joypad state before running frame
+                        if (emulator.set_joypad) {
+                            emulator.set_joypad(joypadState);
+                        }
+                        
+                        // Run one frame
+                        emulator.update_frame();
+                        
+                        // Get frame buffer directly from WASM
+                        const frameData = emulator.get_frame_buffer();
+                        
+                        // Render to canvas
+                        const imageData = ctx.createImageData(160, 144);
+                        const data = new Uint32Array(imageData.data.buffer);
+                        data.set(frameData);
+                        ctx.putImageData(imageData, 0, 0);
+                        
+                        lastFrameTime = currentTime - (deltaTime % targetFrameTime);
+                        
+                        // FPS counter (optional)
+                        frameCount++;
+                        if (currentTime - fpsTime >= 1000) {
+                            console.log('FPS:', frameCount);
+                            frameCount = 0;
+                            fpsTime = currentTime;
+                        }
+                    } catch (err) {
+                        console.error('Frame error:', err);
+                        setStatus('Emulation error: ' + err.message, 'error');
+                        return;
+                    }
                 }
+                
+                animationId = requestAnimationFrame(frame);
             }
             
-            frame();
+            animationId = requestAnimationFrame(frame);
         }
     </script>
 </body>
