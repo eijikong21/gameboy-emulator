@@ -40,6 +40,8 @@ jobs:
           mkdir -p dist
           cp index.html dist/
           cp -r pkg dist/
+          mkdir -p dist/roms
+          cp roms/*.gb dist/roms/ || echo "No ROMs found (will be added later)"
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

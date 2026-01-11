@@ -184,8 +184,10 @@
         </div>
         
         <div class="controls">
+            <button id="load-tobu-btn">🎮 Play Tobu Tobu Girl DX</button>
+            <button id="load-adjustris-btn">🎮 Play Adjustris</button>
             <input type="file" id="rom-input" accept=".gb,.gbc">
-            <button id="load-rom-btn">📁 Load ROM File</button>
+            <button id="load-rom-btn">📁 Load Custom ROM</button>
             <button id="pause-btn" disabled>⏸️ Pause</button>
             <button id="reset-btn" disabled>🔄 Reset</button>
         </div>
@@ -204,6 +206,24 @@
                 <div class="key-row"><strong>Space</strong> Select</div>
             </div>
         </div>
+        
+        <div class="keyboard-map" style="margin-top: 20px;">
+            <h3>🎮 Included Games</h3>
+            <div style="margin-bottom: 10px;">
+                <strong>Tobu Tobu Girl DX</strong><br>
+                <span style="color: #aaa; font-size: 14px;">
+                    © Tangram Games | Free homebrew platformer<br>
+                    <a href="https://tangramgames.dk/tobutobugirl/" target="_blank" style="color: #4CAF50;">tangramgames.dk/tobutobugirl</a>
+                </span>
+            </div>
+            <div>
+                <strong>Adjustris</strong><br>
+                <span style="color: #aaa; font-size: 14px;">
+                    By tbsp | Open source Tetris clone<br>
+                    <a href="https://github.com/tbsp/adjustris" target="_blank" style="color: #4CAF50;">github.com/tbsp/adjustris</a>
+                </span>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -216,6 +236,8 @@
         const canvas = document.getElementById('gameboy-screen');
         const ctx = canvas.getContext('2d');
         const loadBtn = document.getElementById('load-rom-btn');
+        const loadTobuBtn = document.getElementById('load-tobu-btn');
+        const loadAdjustrisBtn = document.getElementById('load-adjustris-btn');
         const pauseBtn = document.getElementById('pause-btn');
         const resetBtn = document.getElementById('reset-btn');
         const romInput = document.getElementById('rom-input');
@@ -244,15 +266,29 @@
         // Load ROM file
         loadBtn.addEventListener('click', () => romInput.click());
         
-        romInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+        // Load built-in games
+        loadTobuBtn.addEventListener('click', () => loadBuiltInGame('roms/tobudx.gb', 'Tobu Tobu Girl DX'));
+        loadAdjustrisBtn.addEventListener('click', () => loadBuiltInGame('roms/adjustris.gb', 'Adjustris'));
+        
+        async function loadBuiltInGame(url, gameName) {
+            setStatus('Loading ' + gameName + '...');
             
-            setStatus('Loading ' + file.name + '...');
-            
-            const arrayBuffer = await file.arrayBuffer();
-            const romData = new Uint8Array(arrayBuffer);
-            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch ROM');
+                }
+                const arrayBuffer = await response.arrayBuffer();
+                const romData = new Uint8Array(arrayBuffer);
+                
+                loadROM(romData, gameName);
+            } catch (err) {
+                console.error('Failed to load built-in game:', err);
+                setStatus('Failed to load ' + gameName + ': ' + err.message, 'error');
+            }
+        }
+        
+        function loadROM(romData, gameName) {
             try {
                 // Stop current emulation if running
                 if (animationId) {
@@ -261,8 +297,8 @@
                 
                 // Create new emulator instance
                 emulator = new WebEmulator(Array.from(romData));
-                console.log('✅ ROM loaded:', file.name);
-                setStatus('Playing: ' + file.name, 'loaded');
+                console.log('✅ ROM loaded:', gameName);
+                setStatus('Playing: ' + gameName, 'loaded');
                 
                 // Enable controls
                 pauseBtn.disabled = false;
@@ -276,6 +312,18 @@
                 console.error('❌ Failed to load ROM:', err);
                 setStatus('Failed to load ROM: ' + err.message, 'error');
             }
+        }
+        
+        romInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            setStatus('Loading ' + file.name + '...');
+            
+            const arrayBuffer = await file.arrayBuffer();
+            const romData = new Uint8Array(arrayBuffer);
+            
+            loadROM(romData, file.name);
         });
         
         pauseBtn.addEventListener('click', () => {
