@@ -325,34 +325,13 @@
                     // Run one frame
                     emulator.update_frame();
                     
-                    // Get screen data and render
-                    const ptr = emulator.get_screen_ptr();
+                    // Get frame buffer directly from WASM
+                    const frameData = emulator.get_frame_buffer();
                     
-                    // Find the WASM memory - try different export names
-                    let wasmMemory;
-                    if (emulator.memory) {
-                        wasmMemory = emulator.memory;
-                    } else if (emulator.__wbindgen_export_0) {
-                        wasmMemory = emulator.__wbindgen_export_0;
-                    } else {
-                        // Search for memory in the module
-                        const module = Object.getPrototypeOf(emulator).constructor;
-                        wasmMemory = module.__wbindgen_export_0 || module.memory;
-                    }
-                    
-                    if (!wasmMemory || !wasmMemory.buffer) {
-                        throw new Error('Could not access WASM memory');
-                    }
-                    
-                    const memory = new Uint32Array(
-                        wasmMemory.buffer,
-                        ptr,
-                        160 * 144
-                    );
-                    
+                    // Render to canvas
                     const imageData = ctx.createImageData(160, 144);
                     const data = new Uint32Array(imageData.data.buffer);
-                    data.set(memory);
+                    data.set(frameData);
                     ctx.putImageData(imageData, 0, 0);
                     
                     animationId = requestAnimationFrame(frame);
