@@ -1,25 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Boy Emulator</title>
     <style>
-        body {
+        * {
             margin: 0;
-            padding: 20px;
-            background: #1a1a1a;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: #fff;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        
+        .screen-container {
+            background: #0f3460;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            margin-bottom: 20px;
         }
         
         #gameboy-screen {
+            display: block;
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            margin: 0 auto;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
-            border: 4px solid #333;
+            border: 4px solid #1a1a2e;
+            border-radius: 4px;
             background: #000;
         }
         
@@ -28,70 +69,137 @@
             gap: 10px;
             flex-wrap: wrap;
             justify-content: center;
+            margin-bottom: 20px;
         }
         
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            background: #4CAF50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             color: white;
-            border-radius: 4px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         
-        button:hover {
-            background: #45a049;
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #load-rom-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
         }
         
         #rom-input {
             display: none;
         }
         
-        .info {
-            text-align: center;
-            max-width: 640px;
-        }
-        
         .keyboard-map {
-            background: #2a2a2a;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
+            background: rgba(15, 52, 96, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
         
         .keyboard-map h3 {
-            margin-top: 0;
+            margin-bottom: 15px;
+            color: #4CAF50;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
         }
         
         .key-row {
-            margin: 5px 0;
+            padding: 8px 12px;
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 6px;
+            border-left: 3px solid #4CAF50;
+        }
+        
+        .key-row strong {
+            color: #4CAF50;
+            margin-right: 8px;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: rgba(15, 52, 96, 0.6);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .status.loaded {
+            color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .status.error {
+            color: #f44336;
+            background: rgba(244, 67, 54, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>🎮 Game Boy Emulator</h1>
-    
-    <div class="info">
-        <p>A Game Boy emulator running in your browser using WebAssembly!</p>
-    </div>
-    
-    <div class="controls">
-        <input type="file" id="rom-input" accept=".gb,.gbc">
-        <button id="load-rom-btn">Load ROM File</button>
-        <button id="pause-btn" disabled>Pause</button>
-        <button id="reset-btn" disabled>Reset</button>
-    </div>
-    
-    <canvas id="gameboy-screen" width="160" height="144"></canvas>
-    
-    <div class="keyboard-map">
-        <h3>Keyboard Controls</h3>
-        <div class="key-row"><strong>Arrow Keys:</strong> D-Pad</div>
-        <div class="key-row"><strong>Z:</strong> A Button</div>
-        <div class="key-row"><strong>X:</strong> B Button</div>
-        <div class="key-row"><strong>Enter:</strong> Start</div>
-        <div class="key-row"><strong>Space:</strong> Select</div>
+    <div class="container">
+        <h1>🎮 Game Boy Emulator</h1>
+        <p class="subtitle">WebAssembly-powered Game Boy emulator running in your browser</p>
+        
+        <div class="status" id="status">
+            Load a ROM file to start playing
+        </div>
+        
+        <div class="controls">
+            <input type="file" id="rom-input" accept=".gb,.gbc">
+            <button id="load-rom-btn">📁 Load ROM File</button>
+            <button id="pause-btn" disabled>⏸️ Pause</button>
+            <button id="reset-btn" disabled>🔄 Reset</button>
+        </div>
+        
+        <div class="screen-container">
+            <canvas id="gameboy-screen" width="160" height="144"></canvas>
+        </div>
+        
+        <div class="keyboard-map">
+            <h3>⌨️ Keyboard Controls</h3>
+            <div class="controls-grid">
+                <div class="key-row"><strong>Arrow Keys</strong> D-Pad</div>
+                <div class="key-row"><strong>Z</strong> A Button</div>
+                <div class="key-row"><strong>X</strong> B Button</div>
+                <div class="key-row"><strong>Enter</strong> Start</div>
+                <div class="key-row"><strong>Space</strong> Select</div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -107,14 +215,22 @@
         const pauseBtn = document.getElementById('pause-btn');
         const resetBtn = document.getElementById('reset-btn');
         const romInput = document.getElementById('rom-input');
+        const status = document.getElementById('status');
         
-        // Scale the canvas for better visibility
-        canvas.style.width = '640px';
-        canvas.style.height = '576px';
+        function setStatus(message, type = '') {
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
         
         // Initialize WASM
-        await init();
-        console.log('WebAssembly initialized');
+        try {
+            await init();
+            console.log('✅ WebAssembly initialized');
+            setStatus('Ready! Load a ROM file to start');
+        } catch (err) {
+            console.error('Failed to initialize WASM:', err);
+            setStatus('Failed to initialize emulator: ' + err.message, 'error');
+        }
         
         // Load ROM file
         loadBtn.addEventListener('click', () => romInput.click());
@@ -122,6 +238,8 @@
         romInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+            
+            setStatus('Loading ' + file.name + '...');
             
             const arrayBuffer = await file.arrayBuffer();
             const romData = new Uint8Array(arrayBuffer);
@@ -134,25 +252,26 @@
                 
                 // Create new emulator instance
                 emulator = new WebEmulator(Array.from(romData));
-                console.log('ROM loaded:', file.name);
+                console.log('✅ ROM loaded:', file.name);
+                setStatus('Playing: ' + file.name, 'loaded');
                 
                 // Enable controls
                 pauseBtn.disabled = false;
                 resetBtn.disabled = false;
                 isPaused = false;
-                pauseBtn.textContent = 'Pause';
+                pauseBtn.textContent = '⏸️ Pause';
                 
                 // Start emulation loop
                 startEmulation();
             } catch (err) {
-                console.error('Failed to load ROM:', err);
-                alert('Failed to load ROM: ' + err.message);
+                console.error('❌ Failed to load ROM:', err);
+                setStatus('Failed to load ROM: ' + err.message, 'error');
             }
         });
         
         pauseBtn.addEventListener('click', () => {
             isPaused = !isPaused;
-            pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+            pauseBtn.textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
             if (!isPaused) {
                 startEmulation();
             }
@@ -170,10 +289,12 @@
             'ArrowLeft': 1,
             'ArrowUp': 2,
             'ArrowDown': 3,
-            'z': 4,      // A
-            'x': 5,      // B
-            ' ': 6,      // Select
-            'Enter': 7   // Start
+            'z': 4,
+            'Z': 4,
+            'x': 5,
+            'X': 5,
+            ' ': 6,
+            'Enter': 7
         };
         
         let joypadState = 0xFF;
@@ -200,26 +321,45 @@
             function frame() {
                 if (isPaused || !emulator) return;
                 
-                // Update joypad state (you'll need to expose this in your WASM)
-                // emulator.set_joypad(joypadState);
-                
-                // Run one frame
-                emulator.update_frame();
-                
-                // Get screen data and render
-                const ptr = emulator.get_screen_ptr();
-                const memory = new Uint32Array(
-                    emulator.__wbindgen_export_0.buffer,
-                    ptr,
-                    160 * 144
-                );
-                
-                const imageData = ctx.createImageData(160, 144);
-                const data = new Uint32Array(imageData.data.buffer);
-                data.set(memory);
-                ctx.putImageData(imageData, 0, 0);
-                
-                animationId = requestAnimationFrame(frame);
+                try {
+                    // Run one frame
+                    emulator.update_frame();
+                    
+                    // Get screen data and render
+                    const ptr = emulator.get_screen_ptr();
+                    
+                    // Find the WASM memory - try different export names
+                    let wasmMemory;
+                    if (emulator.memory) {
+                        wasmMemory = emulator.memory;
+                    } else if (emulator.__wbindgen_export_0) {
+                        wasmMemory = emulator.__wbindgen_export_0;
+                    } else {
+                        // Search for memory in the module
+                        const module = Object.getPrototypeOf(emulator).constructor;
+                        wasmMemory = module.__wbindgen_export_0 || module.memory;
+                    }
+                    
+                    if (!wasmMemory || !wasmMemory.buffer) {
+                        throw new Error('Could not access WASM memory');
+                    }
+                    
+                    const memory = new Uint32Array(
+                        wasmMemory.buffer,
+                        ptr,
+                        160 * 144
+                    );
+                    
+                    const imageData = ctx.createImageData(160, 144);
+                    const data = new Uint32Array(imageData.data.buffer);
+                    data.set(memory);
+                    ctx.putImageData(imageData, 0, 0);
+                    
+                    animationId = requestAnimationFrame(frame);
+                } catch (err) {
+                    console.error('Frame error:', err);
+                    setStatus('Emulation error: ' + err.message, 'error');
+                }
             }
             
             frame();
